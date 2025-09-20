@@ -31,13 +31,23 @@ export async function POST(
       );
     }
 
-    deleteUser(userId);
+    const result = deleteUser(userId);
+
+    if (result.changes === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ message: 'User account deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
+
+    // Provide more specific error information
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Failed to delete user: ${errorMessage}` },
       { status: 500 }
     );
   }
