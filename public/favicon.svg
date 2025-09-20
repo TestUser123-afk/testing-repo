@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="flame" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#F7931E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFD60A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Main flame shape -->
+  <path d="M50 95 C30 95, 25 75, 35 60 C40 50, 45 55, 50 45 C55 50, 60 45, 65 55 C70 65, 75 70, 70 80 C75 85, 70 95, 50 95 Z" fill="url(#flame)"/>
+
+  <!-- Inner flame -->
+  <path d="M50 85 C40 85, 35 70, 42 60 C45 55, 48 58, 50 50 C52 55, 55 52, 58 58 C62 65, 65 70, 60 75 C62 78, 60 85, 50 85 Z" fill="#FFC300"/>
+
+  <!-- Core flame -->
+  <path d="M50 75 C45 75, 42 65, 46 58 C48 55, 49 57, 50 52 C51 55, 52 53, 54 57 C56 62, 58 65, 55 68 C56 70, 55 75, 50 75 Z" fill="#FFE66D"/>
+</svg>
