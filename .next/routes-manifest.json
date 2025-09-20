@@ -1,0 +1,138 @@
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "dynamicRoutes": [
+    {
+      "page": "/api/admin/users/[id]",
+      "regex": "^/api/admin/users/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/users/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/users/[id]/ban",
+      "regex": "^/api/admin/users/([^/]+?)/ban(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/users/(?<nxtPid>[^/]+?)/ban(?:/)?$"
+    },
+    {
+      "page": "/api/admin/users/[id]/delete",
+      "regex": "^/api/admin/users/([^/]+?)/delete(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/users/(?<nxtPid>[^/]+?)/delete(?:/)?$"
+    },
+    {
+      "page": "/api/admin/users/[id]/mute",
+      "regex": "^/api/admin/users/([^/]+?)/mute(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/users/(?<nxtPid>[^/]+?)/mute(?:/)?$"
+    },
+    {
+      "page": "/api/comments/post/[id]",
+      "regex": "^/api/comments/post/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/comments/post/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/comments/[id]",
+      "regex": "^/api/comments/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/comments/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/comments/[id]/vote",
+      "regex": "^/api/comments/([^/]+?)/vote(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/comments/(?<nxtPid>[^/]+?)/vote(?:/)?$"
+    },
+    {
+      "page": "/api/posts/category/[id]",
+      "regex": "^/api/posts/category/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/posts/category/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/posts/[id]",
+      "regex": "^/api/posts/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/posts/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/posts/[id]/vote",
+      "regex": "^/api/posts/([^/]+?)/vote(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/posts/(?<nxtPid>[^/]+?)/vote(?:/)?$"
+    },
+    {
+      "page": "/api/profile/[username]",
+      "regex": "^/api/profile/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPusername": "nxtPusername"
+      },
+      "namedRegex": "^/api/profile/(?<nxtPusername>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "RSC",
+    "varyHeader": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch",
+    "prefetchHeader": "Next-Router-Prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSuffix": ".prefetch.rsc",
+    "prefetchSegmentHeader": "Next-Router-Segment-Prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments"
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  },
+  "rewrites": []
+}
