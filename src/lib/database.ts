@@ -67,11 +67,13 @@ export interface CommentVote extends Vote {
 }
 
 // Ensure the database directory exists
-const dbDir = path.join(process.cwd(), 'data');
+// Use /tmp in serverless environments (like Vercel) where filesystem is read-only
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
+const dbDir = isServerless ? '/tmp' : path.join(process.cwd(), 'data');
 const dbPath = path.join(dbDir, 'ember-forum.db');
 
-// Create data directory if it doesn't exist
-if (!fs.existsSync(dbDir)) {
+// Create data directory if it doesn't exist (skip for /tmp as it always exists)
+if (!isServerless && !fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
