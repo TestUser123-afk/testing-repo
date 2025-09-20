@@ -403,7 +403,7 @@ export function voteOnPost(userId: number, postId: number, voteType: number) {
   const existingVote = getUserPostVote(userId, postId);
 
   // Get the post owner
-  const post = getPostById(postId) as any;
+  const post = getPostById(postId) as Post;
   if (!post) return null;
 
   const stmt = db.prepare('INSERT OR REPLACE INTO post_votes (user_id, post_id, vote_type) VALUES (?, ?, ?)');
@@ -423,7 +423,7 @@ export function voteOnPost(userId: number, postId: number, voteType: number) {
 export function removePostVote(userId: number, postId: number) {
   // Get the existing vote to reverse the social credit effect
   const existingVote = getUserPostVote(userId, postId);
-  const post = getPostById(postId) as any;
+  const post = getPostById(postId) as Post;
 
   const stmt = db.prepare('DELETE FROM post_votes WHERE user_id = ? AND post_id = ?');
   const result = stmt.run(userId, postId);
@@ -458,7 +458,7 @@ export function voteOnComment(userId: number, commentId: number, voteType: numbe
   const existingVote = getUserCommentVote(userId, commentId);
 
   // Get the comment owner
-  const comment = getCommentById(commentId) as any;
+  const comment = getCommentById(commentId) as Comment;
   if (!comment) return null;
 
   const stmt = db.prepare('INSERT OR REPLACE INTO comment_votes (user_id, comment_id, vote_type) VALUES (?, ?, ?)');
@@ -478,7 +478,7 @@ export function voteOnComment(userId: number, commentId: number, voteType: numbe
 export function removeCommentVote(userId: number, commentId: number) {
   // Get the existing vote to reverse the social credit effect
   const existingVote = getUserCommentVote(userId, commentId);
-  const comment = getCommentById(commentId) as any;
+  const comment = getCommentById(commentId) as Comment;
 
   const stmt = db.prepare('DELETE FROM comment_votes WHERE user_id = ? AND comment_id = ?');
   const result = stmt.run(userId, commentId);
