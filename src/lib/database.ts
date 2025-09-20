@@ -266,8 +266,34 @@ export function unmuteUser(userId: number) {
 }
 
 export function deleteUser(userId: number) {
-  const stmt = db.prepare('DELETE FROM users WHERE id = ?');
-  return stmt.run(userId);
+  try {
+    // Start a transaction to ensure all deletions happen atomically
+    const transaction = db.transaction(() => {
+      // Delete user's votes first (due to foreign key constraints)
+      const deletePostVotes = db.prepare('DELETE FROM post_votes WHERE user_id = ?');
+      deletePostVotes.run(userId);
+
+      const deleteCommentVotes = db.prepare('DELETE FROM comment_votes WHERE user_id = ?');
+      deleteCommentVotes.run(userId);
+
+      // Delete user's comments (this will also delete related comment votes due to CASCADE)
+      const deleteComments = db.prepare('DELETE FROM comments WHERE user_id = ?');
+      deleteComments.run(userId);
+
+      // Delete user's posts (this will also delete related post votes and comments due to CASCADE)
+      const deletePosts = db.prepare('DELETE FROM posts WHERE user_id = ?');
+      deletePosts.run(userId);
+
+      // Finally delete the user
+      const deleteUserStmt = db.prepare('DELETE FROM users WHERE id = ?');
+      return deleteUserStmt.run(userId);
+    });
+
+    return transaction();
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
 }
 
 export function getAllUsers(): User[] {
