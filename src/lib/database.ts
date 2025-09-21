@@ -67,24 +67,21 @@ export interface CommentVote extends Vote {
 }
 
 // Ensure the database directory exists
-// For serverless environments, we need to implement a different strategy
+// Use /tmp in serverless environments (like Vercel) where filesystem is read-only
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
+const dbDir = isServerless ? '/tmp' : path.join(process.cwd(), 'data');
+const dbPath = path.join(dbDir, 'ember-forum.db');
 
-// For now, always use persistent storage to prevent data loss
-// This fixes the issue where posts and users disappear
-const dbDir = path.join(process.cwd(), 'data');
-if (!fs.existsSync(dbDir)) {
+// Create data directory if it doesn't exist (skip for /tmp as it always exists)
+if (!isServerless && !fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
-const dbPath = path.join(dbDir, 'ember-forum.db');
 
 console.log('Database path:', dbPath);
 const db = new Database(dbPath);
 
 // Enable foreign key constraints
 db.pragma('foreign_keys = ON');
-
-
 
 // Initialize database schema
 export function initializeDatabase() {
@@ -208,52 +205,6 @@ export function initializeDatabase() {
     insertCategory.run(name, description);
   });
 
-  // Function to import database from JSON backup
-  function importDatabaseFromJSON(jsonPath: string) {
-    try {
-      if (fs.existsSync(jsonPath)) {
-        console.log('Found JSON export, attempting to restore...');
-        const jsonData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-
-        // Import users
-        if (jsonData.users && Array.isArray(jsonData.users)) {
-          const userStmt = db.prepare('INSERT OR REPLACE INTO users (id, username, password, display_name, ip_address, is_banned, is_muted, social_credit_score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-          for (const user of jsonData.users) {
-            userStmt.run(user.id, user.username, user.password, user.display_name, user.ip_address, user.is_banned, user.is_muted, user.social_credit_score, user.created_at);
-          }
-        }
-
-        // Import categories
-        if (jsonData.categories && Array.isArray(jsonData.categories)) {
-          const categoryStmt = db.prepare('INSERT OR REPLACE INTO categories (id, name, color, description, created_at) VALUES (?, ?, ?, ?, ?)');
-          for (const category of jsonData.categories) {
-            categoryStmt.run(category.id, category.name, category.color, category.description, category.created_at);
-          }
-        }
-
-        // Import posts
-        if (jsonData.posts && Array.isArray(jsonData.posts)) {
-          const postStmt = db.prepare('INSERT OR REPLACE INTO posts (id, title, content, author_id, category_id, upvotes, downvotes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-          for (const post of jsonData.posts) {
-            postStmt.run(post.id, post.title, post.content, post.author_id, post.category_id, post.upvotes, post.downvotes, post.created_at, post.updated_at);
-          }
-        }
-
-        // Import comments
-        if (jsonData.comments && Array.isArray(jsonData.comments)) {
-          const commentStmt = db.prepare('INSERT OR REPLACE INTO comments (id, content, author_id, post_id, parent_id, upvotes, downvotes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-          for (const comment of jsonData.comments) {
-            commentStmt.run(comment.id, comment.content, comment.author_id, comment.post_id, comment.parent_id, comment.upvotes, comment.downvotes, comment.created_at, comment.updated_at);
-          }
-        }
-
-        console.log('Database restored from JSON export successfully');
-      }
-    } catch (error) {
-      console.error('Failed to import from JSON:', error);
-    }
-  }
-
   // Create admin user if it doesn't exist
   const adminUsername = 'Helix_Staff';
   const existingAdmin = getUserByUsername(adminUsername);
@@ -265,26 +216,7 @@ export function initializeDatabase() {
     console.log('Admin user created');
   }
 
-  // Try to import from JSON backup if database was just created (deferred to avoid circular deps)
-  if (isServerless) {
-    try {
-      const jsonExportPath = path.join(process.cwd(), 'data', 'database-export.json');
-      // Check if we have minimal data (just admin user)
-      const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-
-      if (userCount.count <= 1) {
-        console.log('Checking for JSON export to restore...');
-        importDatabaseFromJSON(jsonExportPath);
-      }
-    } catch (error) {
-      console.log('Could not check for import data:', error);
-    }
-  }
-
   console.log('Database initialized successfully');
-
-
-
   } catch (error) {
     console.error('Database initialization failed:', error);
     throw error;
@@ -295,9 +227,7 @@ export function initializeDatabase() {
 export function createUser(username: string, password: string, displayName: string, ipAddress: string) {
   const hashedPassword = bcrypt.hashSync(password, 10);
   const stmt = db.prepare('INSERT INTO users (username, password, display_name, ip_address) VALUES (?, ?, ?, ?)');
-  const result = stmt.run(username, hashedPassword, displayName, ipAddress);
-
-  return result;
+  return stmt.run(username, hashedPassword, displayName, ipAddress);
 }
 
 export function getUserByUsername(username: string): User | undefined {
@@ -359,9 +289,7 @@ export function deleteUser(userId: number) {
       return deleteUserStmt.run(userId);
     });
 
-    const result = transaction();
-
-    return result;
+    return transaction();
   } catch (error) {
     console.error('Error deleting user:', error);
     throw error;
@@ -398,9 +326,7 @@ export function getCategoryById(id: number) {
 // Post functions
 export function createPost(title: string, content: string, userId: number, categoryId: number) {
   const stmt = db.prepare('INSERT INTO posts (title, content, user_id, category_id) VALUES (?, ?, ?, ?)');
-  const result = stmt.run(title, content, userId, categoryId);
-
-  return result;
+  return stmt.run(title, content, userId, categoryId);
 }
 
 export function getPostsByCategory(categoryId: number): Post[] {
@@ -460,9 +386,7 @@ export function deletePost(postId: number) {
 // Comment functions
 export function createComment(content: string, userId: number, postId: number) {
   const stmt = db.prepare('INSERT INTO comments (content, user_id, post_id) VALUES (?, ?, ?)');
-  const result = stmt.run(content, userId, postId);
-
-  return result;
+  return stmt.run(content, userId, postId);
 }
 
 export function getCommentById(id: number) {
@@ -521,7 +445,6 @@ export function voteOnPost(userId: number, postId: number, voteType: number) {
   // Add the new vote effect
   updateUserSocialCreditScore(post.user_id, voteType);
 
-
   return result;
 }
 
@@ -576,7 +499,6 @@ export function voteOnComment(userId: number, commentId: number, voteType: numbe
   }
   // Add the new vote effect
   updateUserSocialCreditScore(comment.user_id, voteType);
-
 
   return result;
 }
