@@ -67,21 +67,27 @@ export interface CommentVote extends Vote {
 }
 
 // Ensure the database directory exists
-// Use /tmp in serverless environments (like Vercel) where filesystem is read-only
+// For serverless environments, we need to implement a different strategy
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
-const dbDir = isServerless ? '/tmp' : path.join(process.cwd(), 'data');
-const dbPath = path.join(dbDir, 'ember-forum.db');
 
-// Create data directory if it doesn't exist (skip for /tmp as it always exists)
-if (!isServerless && !fs.existsSync(dbDir)) {
+let dbPath: string;
+let db: Database;
+
+// For now, always use persistent storage to prevent data loss
+// This fixes the issue where posts and users disappear
+const dbDir = path.join(process.cwd(), 'data');
+if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
+dbPath = path.join(dbDir, 'ember-forum.db');
 
 console.log('Database path:', dbPath);
-const db = new Database(dbPath);
+db = new Database(dbPath);
 
 // Enable foreign key constraints
 db.pragma('foreign_keys = ON');
+
+
 
 // Initialize database schema
 export function initializeDatabase() {
@@ -216,7 +222,26 @@ export function initializeDatabase() {
     console.log('Admin user created');
   }
 
+  // Try to import from JSON backup if database was just created (deferred to avoid circular deps)
+  if (isServerless) {
+    try {
+      const jsonExportPath = path.join(process.cwd(), 'data', 'database-export.json');
+      // Check if we have minimal data (just admin user)
+      const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+
+      if (userCount.count <= 1) {
+        console.log('Checking for JSON export to restore...');
+        importDatabaseFromJSON(jsonExportPath);
+      }
+    } catch (error) {
+      console.log('Could not check for import data:', error);
+    }
+  }
+
   console.log('Database initialized successfully');
+
+
+
   } catch (error) {
     console.error('Database initialization failed:', error);
     throw error;
@@ -227,7 +252,9 @@ export function initializeDatabase() {
 export function createUser(username: string, password: string, displayName: string, ipAddress: string) {
   const hashedPassword = bcrypt.hashSync(password, 10);
   const stmt = db.prepare('INSERT INTO users (username, password, display_name, ip_address) VALUES (?, ?, ?, ?)');
-  return stmt.run(username, hashedPassword, displayName, ipAddress);
+  const result = stmt.run(username, hashedPassword, displayName, ipAddress);
+
+  return result;
 }
 
 export function getUserByUsername(username: string): User | undefined {
@@ -289,7 +316,9 @@ export function deleteUser(userId: number) {
       return deleteUserStmt.run(userId);
     });
 
-    return transaction();
+    const result = transaction();
+
+    return result;
   } catch (error) {
     console.error('Error deleting user:', error);
     throw error;
@@ -326,7 +355,9 @@ export function getCategoryById(id: number) {
 // Post functions
 export function createPost(title: string, content: string, userId: number, categoryId: number) {
   const stmt = db.prepare('INSERT INTO posts (title, content, user_id, category_id) VALUES (?, ?, ?, ?)');
-  return stmt.run(title, content, userId, categoryId);
+  const result = stmt.run(title, content, userId, categoryId);
+
+  return result;
 }
 
 export function getPostsByCategory(categoryId: number): Post[] {
@@ -386,7 +417,9 @@ export function deletePost(postId: number) {
 // Comment functions
 export function createComment(content: string, userId: number, postId: number) {
   const stmt = db.prepare('INSERT INTO comments (content, user_id, post_id) VALUES (?, ?, ?)');
-  return stmt.run(content, userId, postId);
+  const result = stmt.run(content, userId, postId);
+
+  return result;
 }
 
 export function getCommentById(id: number) {
@@ -445,6 +478,7 @@ export function voteOnPost(userId: number, postId: number, voteType: number) {
   // Add the new vote effect
   updateUserSocialCreditScore(post.user_id, voteType);
 
+
   return result;
 }
 
@@ -499,6 +533,7 @@ export function voteOnComment(userId: number, commentId: number, voteType: numbe
   }
   // Add the new vote effect
   updateUserSocialCreditScore(comment.user_id, voteType);
+
 
   return result;
 }
