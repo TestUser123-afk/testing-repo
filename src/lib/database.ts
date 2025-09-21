@@ -67,14 +67,35 @@ export interface CommentVote extends Vote {
 }
 
 // Ensure the database directory exists
-// Use /tmp in serverless environments (like Vercel) where filesystem is read-only
-const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
-const dbDir = isServerless ? '/tmp' : path.join(process.cwd(), 'data');
-const dbPath = path.join(dbDir, 'ember-forum.db');
+// Always try to use persistent storage first, fallback to /tmp only if needed
+let dbDir: string;
+let dbPath: string;
 
-// Create data directory if it doesn't exist (skip for /tmp as it always exists)
-if (!isServerless && !fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+// Try to use persistent data directory first
+const persistentDbDir = path.join(process.cwd(), 'data');
+const persistentDbPath = path.join(persistentDbDir, 'ember-forum.db');
+
+try {
+  // Try to create persistent directory
+  if (!fs.existsSync(persistentDbDir)) {
+    fs.mkdirSync(persistentDbDir, { recursive: true });
+  }
+
+  // Test if we can write to the persistent directory
+  const testFile = path.join(persistentDbDir, 'test-write.tmp');
+  fs.writeFileSync(testFile, 'test');
+  fs.unlinkSync(testFile);
+
+  // If we get here, persistent storage works
+  dbDir = persistentDbDir;
+  dbPath = persistentDbPath;
+  console.log('✅ Using persistent storage for database');
+} catch (error) {
+  // Fallback to /tmp with warning
+  console.warn('⚠️  WARNING: Cannot use persistent storage, falling back to ephemeral /tmp');
+  console.warn('⚠️  Data will be lost on server restarts!');
+  dbDir = '/tmp';
+  dbPath = path.join(dbDir, 'ember-forum.db');
 }
 
 console.log('Database path:', dbPath);
@@ -564,11 +585,66 @@ export function verifyPassword(password: string, hashedPassword: string) {
   return bcrypt.compareSync(password, hashedPassword);
 }
 
+// Database backup function
+export function createDatabaseBackup(): string | null {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupDir = path.join(path.dirname(dbPath), 'backups');
+
+    // Create backups directory if it doesn't exist
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+    }
+
+    const backupPath = path.join(backupDir, `ember-forum-backup-${timestamp}.db`);
+
+    // Copy the database file
+    if (fs.existsSync(dbPath)) {
+      fs.copyFileSync(dbPath, backupPath);
+      console.log(`✅ Database backup created: ${backupPath}`);
+      return backupPath;
+    } else {
+      console.log('No database file to backup');
+      return null;
+    }
+  } catch (error) {
+    console.error('Failed to create database backup:', error);
+    return null;
+  }
+}
+
+// Enhanced admin functions for bulk operations with backup
+export function deleteAllPostsWithBackup() {
+  createDatabaseBackup();
+  const stmt = db.prepare('DELETE FROM posts');
+  return stmt.run();
+}
+
+export function deleteAllCommentsWithBackup() {
+  createDatabaseBackup();
+  const stmt = db.prepare('DELETE FROM comments');
+  return stmt.run();
+}
+
+export function deleteAllPostsAndCommentsWithBackup() {
+  createDatabaseBackup();
+  // Delete comments first due to foreign key constraints
+  deleteAllComments();
+  deleteAllPosts();
+}
+
 // Initialize database on import, but with error handling
 try {
+  // Create a backup on startup if database exists
+  if (fs.existsSync(dbPath)) {
+    console.log('🔄 Creating startup backup...');
+    createDatabaseBackup();
+  }
+
   initializeDatabase();
+  console.log('🚀 Database ready and initialized');
 } catch (error) {
-  console.error('Failed to initialize database on import:', error);
+  console.error('❌ Failed to initialize database on import:', error);
 }
 
 export default db;
