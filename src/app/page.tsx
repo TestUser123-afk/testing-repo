@@ -61,7 +61,8 @@ export default function Home() {
     displayName: user?.displayName || '',
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    deleteAccountPassword: ''
   });
   const [showTOS, setShowTOS] = useState(false);
   const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
@@ -83,7 +84,8 @@ export default function Home() {
         displayName: user.displayName,
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        deleteAccountPassword: ''
       }));
     }
   }, [user]);
@@ -380,6 +382,41 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to change password:', error);
       alert('Failed to change password');
+    }
+  };
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your posts and comments.')) {
+      return;
+    }
+
+    if (!settingsForm.deleteAccountPassword) {
+      alert('Please enter your password to confirm account deletion');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: settingsForm.deleteAccountPassword
+        })
+      });
+
+      if (response.ok) {
+        alert('Your account has been deleted successfully. You will be redirected to the home page.');
+        // The API clears the auth cookie, so we can just reload
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      alert('Failed to delete account');
     }
   };
 
@@ -1026,6 +1063,49 @@ export default function Home() {
                   </form>
                 </CardContent>
               </Card>
+
+              {/* Delete Account */}
+              {user?.username !== 'Helix_Staff' && (
+                <Card className="border-red-200 bg-red-50/50">
+                  <CardHeader>
+                    <CardTitle className="text-red-600">Delete Account</CardTitle>
+                    <CardDescription className="text-red-500">
+                      Permanently delete your account and all associated data
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-4 p-3 bg-red-100 border border-red-200 rounded text-sm text-red-700">
+                      <strong>Warning:</strong> This action cannot be undone. Deleting your account will:
+                      <ul className="list-disc list-inside mt-2 space-y-1">
+                        <li>Permanently remove your account</li>
+                        <li>Delete all your posts and comments</li>
+                        <li>Remove all your votes and social credit</li>
+                      </ul>
+                    </div>
+                    <form onSubmit={handleDeleteAccount} className="space-y-4">
+                      <div>
+                        <Label htmlFor="deleteAccountPassword">Enter your password to confirm</Label>
+                        <Input
+                          id="deleteAccountPassword"
+                          type="password"
+                          value={settingsForm.deleteAccountPassword}
+                          onChange={(e) => setSettingsForm(prev => ({ ...prev, deleteAccountPassword: e.target.value }))}
+                          placeholder="Your current password"
+                          required
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        variant="destructive"
+                        className="w-full"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete My Account
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         )}
