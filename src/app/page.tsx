@@ -61,7 +61,8 @@ export default function Home() {
     displayName: user?.displayName || '',
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    deleteAccountPassword: ''
   });
   const [showTOS, setShowTOS] = useState(false);
   const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
@@ -83,7 +84,8 @@ export default function Home() {
         displayName: user.displayName,
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        deleteAccountPassword: ''
       }));
     }
   }, [user]);
@@ -380,6 +382,41 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to change password:', error);
       alert('Failed to change password');
+    }
+  };
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your posts and comments.')) {
+      return;
+    }
+
+    if (!settingsForm.deleteAccountPassword) {
+      alert('Please enter your password to confirm account deletion');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: settingsForm.deleteAccountPassword
+        })
+      });
+
+      if (response.ok) {
+        alert('Your account has been deleted successfully. You will be redirected to the home page.');
+        // The API clears the auth cookie, so we can just reload
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      alert('Failed to delete account');
     }
   };
 
@@ -1026,6 +1063,74 @@ export default function Home() {
                   </form>
                 </CardContent>
               </Card>
+
+              {/* Delete Account */}
+              {user?.username !== 'Helix_Staff' && (
+                <Card className="category-card border-2 border-destructive/30 bg-gradient-to-br from-destructive/10 via-card to-destructive/5 hover-flicker">
+                  <CardHeader className="relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-destructive/5 to-transparent"></div>
+                    <CardTitle className="fire-text flex items-center relative z-10">
+                      <Trash2 className="h-5 w-5 mr-2" />
+                      Extinguish Account
+                    </CardTitle>
+                    <CardDescription className="text-destructive-foreground/80 relative z-10">
+                      Permanently extinguish your presence from the ember forum
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-4 p-4 bg-gradient-to-r from-destructive/20 to-destructive/10 border-2 border-destructive/40 rounded-lg text-sm relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-destructive/5 to-transparent"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center mb-2">
+                          <Flame className="h-4 w-4 mr-2 text-destructive animate-pulse" />
+                          <strong className="fire-text">Final Warning:</strong>
+                        </div>
+                        <p className="text-destructive-foreground/90 mb-2">
+                          This action will completely extinguish your digital presence. Your ember will be snuffed out forever:
+                        </p>
+                        <ul className="list-none space-y-1 text-destructive-foreground/80">
+                          <li className="flex items-center">
+                            <Flame className="h-3 w-3 mr-2 text-destructive/70" />
+                            Permanently remove your account
+                          </li>
+                          <li className="flex items-center">
+                            <Flame className="h-3 w-3 mr-2 text-destructive/70" />
+                            Delete all your posts and comments
+                          </li>
+                          <li className="flex items-center">
+                            <Flame className="h-3 w-3 mr-2 text-destructive/70" />
+                            Remove all your votes and social credit
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <form onSubmit={handleDeleteAccount} className="space-y-4">
+                      <div>
+                        <Label htmlFor="deleteAccountPassword" className="text-destructive-foreground/90">
+                          Enter your password to seal your fate
+                        </Label>
+                        <Input
+                          id="deleteAccountPassword"
+                          type="password"
+                          value={settingsForm.deleteAccountPassword}
+                          onChange={(e) => setSettingsForm(prev => ({ ...prev, deleteAccountPassword: e.target.value }))}
+                          placeholder="Your current password"
+                          className="border-destructive/40 focus:border-destructive focus:ring-destructive bg-card/50"
+                          required
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        variant="destructive"
+                        className="w-full ember-gradient hover:ember-glow transition-all duration-300 font-bold tracking-wide"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Extinguish My Ember Forever
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         )}
