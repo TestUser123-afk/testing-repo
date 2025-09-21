@@ -389,26 +389,43 @@ export default function Home() {
   };
 
   const handleDeleteAllPosts = async () => {
-    if (!confirm('Are you sure you want to delete ALL posts and comments? This action cannot be undone!')) return;
+    const firstConfirm = confirm('⚠️ WARNING: Are you sure you want to delete ALL posts and comments? This action cannot be undone!');
+    if (!firstConfirm) return;
+
+    const confirmationPrompt = prompt(
+      '🚨 FINAL WARNING: This will permanently delete ALL data!\n\n' +
+      'To proceed, type the exact confirmation code:\n' +
+      'DELETE_ALL_DATA_PERMANENTLY\n\n' +
+      'Enter confirmation code:'
+    );
+
+    if (confirmationPrompt !== 'DELETE_ALL_DATA_PERMANENTLY') {
+      alert('❌ Deletion cancelled. Incorrect confirmation code.');
+      return;
+    }
 
     try {
       const response = await fetch('/api/admin/delete-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'all' })
+        body: JSON.stringify({
+          type: 'all',
+          confirmationCode: 'DELETE_ALL_DATA_PERMANENTLY'
+        })
       });
 
       if (response.ok) {
-        alert('All posts and comments deleted successfully');
+        alert('✅ All posts and comments deleted successfully. Backup was created.');
         if (currentView === 'postManagement') {
           fetchAllPosts();
         }
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to delete posts and comments');
+        alert(`❌ ${error.error || 'Failed to delete posts and comments'}`);
       }
     } catch (error) {
       console.error('Failed to delete all posts:', error);
+      alert('❌ Failed to delete posts and comments');
     }
   };
 
