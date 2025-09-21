@@ -633,16 +633,24 @@ export function deleteAllPostsAndCommentsWithBackup() {
   deleteAllPosts();
 }
 
-// Initialize database on import, but with error handling
-try {
-  // Create a backup on startup if database exists
-  if (fs.existsSync(dbPath)) {
-    console.log('🔄 Creating startup backup...');
-    createDatabaseBackup();
-  }
+// Global flag to prevent multiple initializations
+let isInitialized = false;
 
-  initializeDatabase();
-  console.log('🚀 Database ready and initialized');
+// Initialize database on import, but with error handling and safety guards
+try {
+  if (!isInitialized) {
+    // Create a backup on startup if database exists
+    if (fs.existsSync(dbPath)) {
+      console.log('🔄 Creating startup backup...');
+      createDatabaseBackup();
+    }
+
+    initializeDatabase();
+    isInitialized = true;
+    console.log('🚀 Database ready and initialized');
+  } else {
+    console.log('✅ Database already initialized, skipping re-initialization');
+  }
 } catch (error) {
   console.error('❌ Failed to initialize database on import:', error);
 }
