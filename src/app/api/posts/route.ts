@@ -19,6 +19,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
+    console.log('POST /api/posts - Current user:', user ? { id: user.id, username: user.username, displayName: user.displayName } : 'null');
+
     if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
