@@ -44,8 +44,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await fetch('/api/auth/me');
       if (response.ok) {
         const data = await response.json();
+        console.log('AuthContext: User authenticated', { id: data.user.id, username: data.user.username, isAdmin: data.user.isAdmin });
         setUser(data.user);
       } else {
+        console.log('AuthContext: No authenticated user');
         setUser(null);
       }
     } catch (error) {
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const data = await response.json();
 
       if (response.ok) {
+        console.log('AuthContext: Login successful', { id: data.user.id, username: data.user.username, isAdmin: data.user.isAdmin });
         setUser(data.user);
         return { success: true };
       } else {
