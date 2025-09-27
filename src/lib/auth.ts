@@ -76,11 +76,14 @@ export async function getCurrentUser(): Promise<UserSession | null> {
     const user = getUserById(decoded.id);
     if (!user) return null;
 
+    // Determine admin status dynamically from current username
+    const isAdmin = user.username === ADMIN_USERNAME;
+
     return {
       id: user.id,
       username: user.username,
       displayName: user.display_name,
-      isAdmin: decoded.isAdmin,
+      isAdmin: isAdmin,
       isBanned: user.is_banned,
       isMuted: user.is_muted
     };
@@ -101,11 +104,14 @@ export async function getUserFromRequest(request: NextRequest): Promise<UserSess
     const user = getUserById(decoded.id);
     if (!user) return null;
 
+    // Determine admin status dynamically from current username
+    const isAdmin = user.username === ADMIN_USERNAME;
+
     return {
       id: user.id,
       username: user.username,
       displayName: user.display_name,
-      isAdmin: decoded.isAdmin,
+      isAdmin: isAdmin,
       isBanned: user.is_banned,
       isMuted: user.is_muted
     };
