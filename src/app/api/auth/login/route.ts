@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
         maxAge: 7 * 24 * 60 * 60 // 7 days
       });
 
+      console.log('Admin user logged in:', { id: adminUser.id, username: adminUser.username });
+
       return NextResponse.json({
         message: 'Login successful',
         user: {
@@ -80,6 +82,8 @@ export async function POST(request: NextRequest) {
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 // 7 days
     });
+
+    console.log('Regular user logged in:', { id: user.id, username: user.username });
 
     return NextResponse.json({
       message: 'Login successful',
